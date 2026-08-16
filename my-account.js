@@ -178,9 +178,12 @@ function wireProfileEditing(session) {
         });
       }
 
-      // Re-render with fresh data instead of hand-patching the DOM —
-      // simplest way to guarantee what's shown matches what's saved.
-      renderAccountPage(document.getElementById("accountRoot"), updated);
+      // Full reload (rather than re-rendering in place) makes it obvious
+      // the save actually happened — you land back on a fresh copy of
+      // the page with your new info already showing, instead of the
+      // form just quietly closing.
+      alert("Profile updated!");
+      window.location.reload();
     } catch (err) {
       alert(err.message || "Couldn't save your changes. Please try again.");
       saveBtn.disabled = false;
