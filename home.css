@@ -2687,65 +2687,436 @@ ul {
   color: #ffffff;
 }
 /* login css */
-      .auth-wrapper {
-        max-width: 440px;
-        margin: 60px auto;
-        padding: 32px 24px;
-        background: #ffffff;
-        border: 1px solid #e0e0e0;
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-      }
-      .role-tabs {
-        display: flex;
-        background: #f4f4f5;
-        padding: 4px;
-        border-radius: 8px;
-        margin-bottom: 24px;
-      }
-      .role-tab-btn {
-        flex: 1;
-        padding: 10px;
-        border: none;
-        background: transparent;
-        font-weight: 600;
-        cursor: pointer;
-        border-radius: 6px;
-        transition: all 0.2s ease;
-      }
-      .role-tab-btn.active {
-        background: #000000;
-        color: #ffffff;
-      }
-      .auth-form .form-group {
-        margin-bottom: 18px;
-      }
-      .auth-form label {
-        display: block;
-        font-size: 13px;
-        font-weight: 600;
-        margin-bottom: 6px;
-      }
-      .auth-form input {
-        width: 100%;
-        padding: 12px;
-        border: 1px solid #ccc;
-        border-radius: 6px;
-        font-size: 14px;
-        box-sizing: border-box;
-      }
-      .btn-auth-submit {
-        width: 100%;
-        padding: 14px;
-        background: #000000;
-        color: #ffffff;
-        border: none;
-        border-radius: 6px;
-        font-weight: 700;
-        cursor: pointer;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-      .btn-auth-submit:hover {
-        background: #222222;
-      }
+.auth-wrapper {
+  max-width: 440px;
+  margin: 60px auto;
+  padding: 32px 24px;
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+.role-tabs {
+  display: flex;
+  background: #f4f4f5;
+  padding: 4px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+.role-tab-btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: transparent;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+.role-tab-btn.active {
+  background: #000000;
+  color: #ffffff;
+}
+.auth-form .form-group {
+  margin-bottom: 18px;
+}
+.auth-form label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.auth-form input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+.btn-auth-submit {
+  width: 100%;
+  padding: 14px;
+  background: #000000;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-weight: 700;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.btn-auth-submit:hover {
+  background: #222222;
+}
+
+/* ===========================================================
+   MY ACCOUNT — floating "logged in" dropdown + account page
+   Same black/white/red palette as the rest of the site (see
+   :root vars at the top) — no new colors introduced here.
+   =========================================================== */
+
+.account-bar {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+}
+
+.account-bar-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--color-text);
+  color: var(--color-bg);
+  padding: 10px 16px;
+  border-radius: 30px;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.account-bar-trigger .account-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.account-bar-trigger .chevron {
+  font-size: 10px;
+  opacity: 0.7;
+  transition: transform var(--transition);
+}
+
+.account-bar.open .account-bar-trigger .chevron {
+  transform: rotate(180deg);
+}
+
+.account-bar-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  min-width: 180px;
+  overflow: hidden;
+  display: none;
+}
+
+.account-bar.open .account-bar-menu {
+  display: block;
+}
+
+.account-bar-menu a,
+.account-bar-menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.account-bar-menu a:hover,
+.account-bar-menu button:hover {
+  background: var(--color-bg-alt);
+}
+
+.account-bar-menu .signout-link {
+  color: var(--color-accent);
+  border-top: 1px solid var(--color-border);
+}
+
+/* ---- Account page ---- */
+
+.account-hero {
+  background: var(--color-text);
+  color: var(--color-bg);
+  padding: 40px 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.account-hero-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.account-avatar-lg {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  background: var(--color-accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.account-hero h1 {
+  margin: 0 0 4px;
+  font-size: 28px;
+}
+
+.account-hero p {
+  margin: 0;
+  color: #cccccc;
+  font-size: 14px;
+}
+
+.account-content {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+.account-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.account-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.account-card-header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.account-card-header p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.btn-edit-profile {
+  background: var(--color-bg);
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent);
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-edit-profile:hover {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.account-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.account-info-field {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+
+.account-info-field label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin-bottom: 6px;
+}
+
+.account-info-field span {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.account-edit-form {
+  display: none;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 4px;
+}
+
+.account-edit-form.open {
+  display: flex;
+}
+
+.account-info-grid.hidden-while-editing {
+  display: none;
+}
+
+.account-edit-form label {
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.account-edit-form input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.account-edit-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.account-edit-actions button {
+  padding: 10px 20px;
+  border-radius: 6px;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.btn-save-profile {
+  background: var(--color-text);
+  color: var(--color-bg);
+}
+
+.btn-cancel-edit {
+  background: var(--color-bg-alt);
+  color: var(--color-text);
+}
+
+.account-password-toggle {
+  font-size: 13px;
+  color: var(--color-accent);
+  cursor: pointer;
+  font-weight: 600;
+  background: none;
+  border: none;
+  padding: 0;
+  margin-top: 4px;
+}
+
+.order-history-count {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: -12px 0 16px;
+}
+
+.order-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.order-row-main strong {
+  display: block;
+  font-size: 15px;
+}
+
+.order-row-main span {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.order-row-right {
+  text-align: right;
+}
+
+.order-row-right .order-total {
+  font-weight: 700;
+  color: var(--color-accent);
+  display: block;
+}
+
+.order-status {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.order-status.pending {
+  color: #b8860b;
+}
+
+.order-status.paid {
+  color: #1a8a3d;
+}
+
+.order-status.cancelled {
+  color: var(--color-text-muted);
+}
+
+.account-empty-state {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+.account-guard {
+  max-width: 480px;
+  margin: 80px auto;
+  text-align: center;
+  padding: 0 24px;
+}
+
+.account-guard h2 {
+  margin-bottom: 8px;
+}
+
+.account-guard p {
+  color: var(--color-text-muted);
+  margin-bottom: 20px;
+}
+
+.delivery-address-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}

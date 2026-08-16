@@ -288,6 +288,25 @@ document.addEventListener("DOMContentLoaded", () => {
       );
       const deliveryName = selectedDelivery ? selectedDelivery.value : "Grab";
 
+      // Province/City are only required for actual delivery — store
+      // pickup doesn't need a shipping address at all, so this check is
+      // skipped whenever the pickup fields are the ones showing.
+      const isPickup =
+        document.getElementById("pickupFields")?.style.display !== "none" &&
+        document.getElementById("deliveryFields")?.style.display === "none";
+
+      const deliveryProvince = document
+        .getElementById("deliveryProvinceInput")
+        ?.value.trim();
+      const deliveryCity = document
+        .getElementById("deliveryCityInput")
+        ?.value.trim();
+
+      if (!isPickup && (!deliveryProvince || !deliveryCity)) {
+        alert("Please enter your Province and City for delivery.");
+        return;
+      }
+
       const subtotal = cart.reduce(
         (sum, item) => sum + item.price * item.qty,
         0,
@@ -311,6 +330,8 @@ document.addEventListener("DOMContentLoaded", () => {
             customerName: session.name,
             customerEmail: session.email,
             deliveryName,
+            deliveryProvince: deliveryProvince || "",
+            deliveryCity: deliveryCity || "",
             items: cart.map((item) => ({
               id: item.id,
               title: item.title,

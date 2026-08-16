@@ -5,7 +5,10 @@
 // asks the server, because only the server actually knows (it holds
 // the session cookie's matching record in the database).
 
-const API_BASE = "https://dominant.pythonanywhere.com/api";
+// Local dev talks to your own machine. Once the backend is live on
+// PythonAnywhere, change this to your PythonAnywhere API URL, e.g.
+//   "https://yourusername.pythonanywhere.com/api"
+const API_BASE = "http://127.0.0.1:8000/api";
 
 // ---------------------------------------------------------------------
 // apiFetch: a tiny wrapper around fetch() so we don't repeat ourselves.
@@ -86,9 +89,10 @@ window.addEventListener("DOMContentLoaded", async () => {
   const session = await whoami();
   if (!session.isLoggedIn) return;
 
-  const userBar = document.createElement("div");
-
   if (session.role === "admin") {
+    // Admins already have both actions they need (dashboard + logout)
+    // visible at a glance — no dropdown needed for this role.
+    const userBar = document.createElement("div");
     userBar.innerHTML = `
       <div style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; background: #000; color: #fff; padding: 12px 18px; border-radius: 30px; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
         <span style="font-size: 12px; font-weight: 700; background: #ff3b30; padding: 2px 8px; border-radius: 10px;">ADMIN</span>
@@ -96,16 +100,44 @@ window.addEventListener("DOMContentLoaded", async () => {
         <button onclick="handleLogout()" style="background: transparent; border: none; color: #aaa; cursor: pointer; font-size: 12px;">Logout</button>
       </div>
     `;
-  } else {
-    userBar.innerHTML = `
-      <div style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; background: #1c1c1e; color: #fff; padding: 12px 18px; border-radius: 30px; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-        <span style="font-size: 12px; font-weight: 600; color: #8e8e93;">Logged in as ${session.name}</span>
-        <button onclick="handleLogout()" style="background: #ff3b30; border: none; color: #fff; cursor: pointer; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px;">Logout</button>
-      </div>
-    `;
+    document.body.appendChild(userBar);
+    return;
   }
 
-  document.body.appendChild(userBar);
+  // Customers get a small dropdown instead of a flat "Logout" button —
+  // clicking their name reveals "My Account" (profile + order history)
+  // and "Sign Out", matching the styling already defined in home.css
+  // (.account-bar and friends) rather than any inline colors here.
+  const initial = (session.name || "?").trim().charAt(0).toUpperCase();
+
+  const accountBar = document.createElement("div");
+  accountBar.className = "account-bar";
+  accountBar.innerHTML = `
+    <button class="account-bar-trigger" id="accountBarTrigger">
+      <span class="account-avatar">${initial}</span>
+      <span>${session.name}</span>
+      <span class="chevron">&#9660;</span>
+    </button>
+    <div class="account-bar-menu">
+      <a href="my-account.html">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        My Account
+      </a>
+      <button onclick="handleLogout()" class="signout-link">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        Sign Out
+      </button>
+    </div>
+  `;
+  document.body.appendChild(accountBar);
+
+  document
+    .getElementById("accountBarTrigger")
+    .addEventListener("click", (e) => {
+      e.stopPropagation();
+      accountBar.classList.toggle("open");
+    });
+  document.addEventListener("click", () => accountBar.classList.remove("open"));
 });
 
 // Single Unified Logout Function
