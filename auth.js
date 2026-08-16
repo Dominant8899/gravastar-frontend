@@ -8,7 +8,7 @@
 // Local dev talks to your own machine. Once the backend is live on
 // PythonAnywhere, change this to your PythonAnywhere API URL, e.g.
 //   "https://yourusername.pythonanywhere.com/api"
-const API_BASE = "http://127.0.0.1:8000/api";
+const API_BASE = "https://dominant.pythonanywhere.com/api";
 
 // ---------------------------------------------------------------------
 // apiFetch: a tiny wrapper around fetch() so we don't repeat ourselves.
