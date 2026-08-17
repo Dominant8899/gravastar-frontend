@@ -261,6 +261,15 @@
 
               <!-- Delivery Method Options -->
               <div id="deliveryFields">
+                <div class="delivery-address-fields">
+                  <input
+                    type="text"
+                    id="deliveryLocationInput"
+                    placeholder="City/Province"
+                    class="checkout-input"
+                  />
+                </div>
+
                 <label class="delivery-option">
                   <input
                     type="radio"
@@ -278,15 +287,6 @@
                   <input type="radio" name="deliveryMethod" value="J&T" />
                   <span>J&T Express</span>
                 </label>
-
-                <div class="delivery-address-fields">
-                  <input
-                    type="text"
-                    id="deliveryLocationInput"
-                    placeholder="City/Province"
-                    class="checkout-input"
-                  />
-                </div>
               </div>
 
               <!-- Pickup Details -->
@@ -540,9 +540,7 @@
 
     <script src="auth.js"></script>
 
-
     <script src="catalog.js"></script>
-
 
     <script src="cart.js"></script>
   </body>
