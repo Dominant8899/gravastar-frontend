@@ -214,19 +214,54 @@ async function loadOrderHistory() {
   countEl.textContent = `${orders.length} order${orders.length === 1 ? "" : "s"} placed`;
 
   listEl.innerHTML = orders
-    .map(
-      (o) => `
-    <div class="order-row">
-      <div class="order-row-main">
-        <strong>Order #${escapeHtml(o.orderNum)}</strong>
-        <span>Date: ${escapeHtml(o.date)}</span>
-      </div>
-      <div class="order-row-right">
-        <span class="order-total">$${Number(o.total).toFixed(2)}</span>
-        <span class="order-status ${escapeHtml(o.status)}">${escapeHtml(o.status)}</span>
+    .map((o, index) => {
+      const rowId = `orderItems${index}`;
+      const itemsHtml = (o.items || [])
+        .map(
+          (item) => `
+        <div class="order-item-row">
+          <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}" class="order-item-thumb" onerror="this.style.visibility='hidden'" />
+          <div class="order-item-info">
+            <span class="order-item-title">${escapeHtml(item.title)}</span>
+            <span class="order-item-qty">Qty: ${item.qty} &times; $${Number(item.price).toFixed(2)}</span>
+          </div>
+          <span class="order-item-line-total">$${(item.qty * Number(item.price)).toFixed(2)}</span>
+        </div>
+      `,
+        )
+        .join("");
+
+      return `
+    <div class="order-row-wrapper">
+      <button type="button" class="order-row" onclick="toggleOrderDetails('${rowId}', this)">
+        <div class="order-row-main">
+          <strong>Order #${escapeHtml(o.orderNum)}</strong>
+          <span>Date: ${escapeHtml(o.date)}</span>
+        </div>
+        <div class="order-row-right">
+          <span class="order-total">$${Number(o.total).toFixed(2)}</span>
+          <span class="order-status ${escapeHtml(o.status)}">${escapeHtml(o.status)}</span>
+        </div>
+        <span class="order-row-chevron">&#9660;</span>
+      </button>
+
+      <div class="order-details" id="${rowId}">
+        <div class="order-items-list">${itemsHtml}</div>
+        <div class="order-summary-lines">
+          <div><span>Subtotal</span><span>$${Number(o.subtotal).toFixed(2)}</span></div>
+          <div><span>Discount</span><span>${Number(o.discount) > 0 ? "-$" + Number(o.discount).toFixed(2) : "$0.00"}</span></div>
+          <div><span>Shipping</span><span>${Number(o.shipping) > 0 ? "$" + Number(o.shipping).toFixed(2) : "FREE"}</span></div>
+          <div class="order-summary-total"><span>Total</span><span>$${Number(o.total).toFixed(2)}</span></div>
+        </div>
       </div>
     </div>
-  `,
-    )
+  `;
+    })
     .join("");
+}
+
+function toggleOrderDetails(rowId, triggerBtn) {
+  const panel = document.getElementById(rowId);
+  const isOpen = panel.classList.toggle("open");
+  triggerBtn.classList.toggle("open", isOpen);
 }
