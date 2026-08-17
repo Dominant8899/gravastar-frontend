@@ -295,15 +295,12 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("pickupFields")?.style.display !== "none" &&
         document.getElementById("deliveryFields")?.style.display === "none";
 
-      const deliveryProvince = document
-        .getElementById("deliveryProvinceInput")
-        ?.value.trim();
-      const deliveryCity = document
-        .getElementById("deliveryCityInput")
+      const deliveryLocation = document
+        .getElementById("deliveryLocationInput")
         ?.value.trim();
 
-      if (!isPickup && (!deliveryProvince || !deliveryCity)) {
-        alert("Please enter your Province and City for delivery.");
+      if (!isPickup && !deliveryLocation) {
+        alert("Please enter your City/Province for delivery.");
         return;
       }
 
@@ -330,8 +327,8 @@ document.addEventListener("DOMContentLoaded", () => {
             customerName: session.name,
             customerEmail: session.email,
             deliveryName,
-            deliveryProvince: deliveryProvince || "",
-            deliveryCity: deliveryCity || "",
+            deliveryProvince: deliveryLocation || "",
+            deliveryCity: deliveryLocation || "",
             items: cart.map((item) => ({
               id: item.id,
               title: item.title,
