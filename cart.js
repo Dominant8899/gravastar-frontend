@@ -4,6 +4,58 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentDiscount = 0.0;
   let shippingCost = 0.0;
 
+  // Shipping zones by province/city — a distance TIER, not a live-routed
+  // distance (that would need a paid mapping API and a real store
+  // address). Keep this list in sync with the matching one in the
+  // backend's views.py (search for SHIPPING_ZONES there) — the backend
+  // recomputes shipping itself from the same table rather than trusting
+  // whatever this file sends, so the two must agree or a legitimate
+  // order could get rejected/mismatched at checkout.
+  const SHIPPING_ZONES = {
+    2: ["phnom penh", "kandal", "kampong speu", "takeo"],
+    4: [
+      "kampong cham",
+      "kampong chhnang",
+      "kampot",
+      "kep",
+      "preah sihanouk",
+      "sihanoukville",
+      "svay rieng",
+      "prey veng",
+      "kampong thom",
+      "battambang",
+      "pursat",
+      "tboung khmum",
+    ],
+    6: [
+      "siem reap",
+      "banteay meanchey",
+      "oddar meanchey",
+      "preah vihear",
+      "stung treng",
+      "ratanakiri",
+      "mondulkiri",
+      "kratie",
+      "pailin",
+      "koh kong",
+    ],
+  };
+  const FREE_SHIPPING_THRESHOLD = 50;
+
+  function calculateShippingCost(subtotal, isPickup) {
+    if (isPickup) return 0; // no delivery = no delivery fee
+    if (subtotal >= FREE_SHIPPING_THRESHOLD) return 0;
+
+    const locationInput = document.getElementById("deliveryLocationInput");
+    const typed = (locationInput?.value || "").trim().toLowerCase();
+    if (!typed) return 4; // nothing entered yet — mid-tier placeholder for display only; real order still requires the field filled in (see the existing alert check further down)
+
+    for (const [fee, provinces] of Object.entries(SHIPPING_ZONES)) {
+      if (provinces.some((p) => typed.includes(p))) return Number(fee);
+    }
+    return 4; // unrecognized input — mid-tier default rather than guessing too high or too low
+  }
+
   // Load saved state from Local Storage immediately
   loadCartFromStorage();
 
@@ -51,6 +103,31 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Recalculate shipping live as the customer types their city/province,
+  // or switches between Delivery and Store Pickup — both affect the fee.
+  const deliveryLocationInput = document.getElementById(
+    "deliveryLocationInput",
+  );
+  if (deliveryLocationInput) {
+    deliveryLocationInput.addEventListener("input", updateCartUI);
+  }
+  document.addEventListener("fulfillment-changed", updateCartUI);
+
+  // Pre-fill the delivery field with the city saved on the customer's
+  // profile (My Account), so returning customers don't have to retype it
+  // every order — but it stays a normal, editable field, since someone
+  // might legitimately ship a particular order somewhere else (a gift,
+  // a different address that trip, etc.). whoami() is defined in
+  // auth.js, loaded before this file.
+  (async () => {
+    if (!deliveryLocationInput) return;
+    const session = await whoami();
+    if (session.isLoggedIn && session.city && !deliveryLocationInput.value) {
+      deliveryLocationInput.value = session.city;
+      updateCartUI(); // reflect the prefilled city in the shipping estimate immediately
+    }
+  })();
+
   if (cartBtn)
     cartBtn.addEventListener("click", (e) => {
       e.preventDefault();
@@ -81,6 +158,14 @@ document.addEventListener("DOMContentLoaded", () => {
     cartCountBadges.forEach((el) => (el.textContent = totalQty));
 
     const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+
+    const pickupFields = document.getElementById("pickupFields");
+    const deliveryFields = document.getElementById("deliveryFields");
+    const isPickup =
+      pickupFields?.style.display !== "none" &&
+      deliveryFields?.style.display === "none";
+
+    shippingCost = calculateShippingCost(subtotal, isPickup);
     const grandTotal = Math.max(0, subtotal - currentDiscount + shippingCost);
 
     if (cartSubtotalAmount)
@@ -327,8 +412,9 @@ document.addEventListener("DOMContentLoaded", () => {
             customerName: session.name,
             customerEmail: session.email,
             deliveryName,
-            deliveryProvince: deliveryLocation || "",
-            deliveryCity: deliveryLocation || "",
+            deliveryProvince: isPickup ? "" : deliveryLocation || "",
+            deliveryCity: isPickup ? "" : deliveryLocation || "",
+            isPickup,
             items: cart.map((item) => ({
               id: item.id,
               title: item.title,
@@ -448,6 +534,11 @@ window.selectFulfillment = function (method) {
     if (deliveryFields) deliveryFields.style.display = "none";
     if (pickupFields) pickupFields.style.display = "block";
   }
+
+  // Let the cart-totals code (in the DOMContentLoaded closure above,
+  // which this function lives outside of) know it should recompute
+  // shipping — pickup is always free, delivery isn't.
+  document.dispatchEvent(new Event("fulfillment-changed"));
 };
 
 window.selectPayment = function (type) {
