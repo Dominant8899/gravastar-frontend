@@ -29,6 +29,9 @@ function showTab(evt, tabName) {
   } else if (tabName === "orders") {
     document.getElementById("ordersTab").classList.add("active");
     renderOrders();
+  } else if (tabName === "coupons") {
+    document.getElementById("couponsTab").classList.add("active");
+    fetchAndRenderCoupons();
   } else {
     document.getElementById("customersTab").classList.add("active");
     renderCustomers();
@@ -380,3 +383,156 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+
+// ---------- COUPONS: backed by Django ----------
+
+let coupons = []; // in-memory cache of what the API last returned
+
+async function fetchAndRenderCoupons() {
+  try {
+    const res = await fetch(`${API_BASE}/coupons/`, { credentials: "include" });
+    if (!res.ok) throw new Error(`Server responded ${res.status}`);
+    const data = await res.json();
+    coupons = data.coupons || [];
+    renderCouponTable();
+  } catch (err) {
+    console.error("Couldn't load coupons:", err);
+  }
+}
+
+function renderCouponTable() {
+  const tbody = document.getElementById("couponTableBody");
+  tbody.innerHTML = "";
+
+  if (coupons.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 30px 0; color:#888;">No coupons yet. Add one above.</td></tr>`;
+    return;
+  }
+
+  coupons.forEach((c) => {
+    const row = document.createElement("tr");
+    const valueDisplay =
+      c.discountType === "percentage"
+        ? `${parseFloat(c.discountValue)}%`
+        : `$${parseFloat(c.discountValue).toFixed(2)}`;
+    row.innerHTML = `
+      <td><strong>${c.code}</strong></td>
+      <td>${c.discountType === "percentage" ? "Percentage" : "Fixed Amount"}</td>
+      <td>${valueDisplay}</td>
+      <td>${c.minOrderAmount > 0 ? "$" + parseFloat(c.minOrderAmount).toFixed(2) : "—"}</td>
+      <td>${c.expiresAt || "Never"}</td>
+      <td>${c.isActive ? "Active" : "Inactive"}</td>
+      <td>
+        <button class="btn-crud btn-edit" data-action="edit" data-id="${c.id}">Edit</button>
+        <button class="btn-crud btn-delete" data-action="delete" data-id="${c.id}">Delete</button>
+      </td>
+    `;
+    tbody.appendChild(row);
+  });
+}
+
+document.getElementById("couponTableBody").addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-action]");
+  if (!btn) return;
+  const id = btn.dataset.id;
+  if (btn.dataset.action === "edit") editCoupon(id);
+  else if (btn.dataset.action === "delete") deleteCoupon(id);
+});
+
+// CREATE or UPDATE coupon
+async function handleCouponSubmit(e) {
+  e.preventDefault();
+  const id = document.getElementById("couponId").value;
+  const code = document.getElementById("couponCode").value.trim().toUpperCase();
+  const discountType = document.getElementById("couponDiscountType").value;
+  const discountValue = document.getElementById("couponDiscountValue").value;
+  const minOrderAmount = document.getElementById("couponMinOrder").value;
+  const expiresAt = document.getElementById("couponExpiresAt").value;
+  const isActive = document.getElementById("couponIsActive").value === "true";
+
+  const payload = {
+    code,
+    discountType,
+    discountValue,
+    minOrderAmount: minOrderAmount || 0,
+    expiresAt: expiresAt || null,
+    isActive,
+  };
+
+  try {
+    let res;
+    if (id) {
+      res = await fetch(`${API_BASE}/coupons/${id}/`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+    } else {
+      res = await fetch(`${API_BASE}/coupons/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+    }
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `Server responded ${res.status}`);
+    }
+
+    resetCouponForm();
+    await fetchAndRenderCoupons();
+  } catch (err) {
+    alert("Couldn't save coupon: " + err.message);
+    console.error(err);
+  }
+}
+
+// EDIT: Populate form with existing coupon values
+function editCoupon(id) {
+  const c = coupons.find((item) => String(item.id) === String(id));
+  if (c) {
+    document.getElementById("couponId").value = c.id;
+    document.getElementById("couponCode").value = c.code;
+    document.getElementById("couponDiscountType").value = c.discountType;
+    document.getElementById("couponDiscountValue").value = c.discountValue;
+    document.getElementById("couponMinOrder").value =
+      c.minOrderAmount > 0 ? c.minOrderAmount : "";
+    document.getElementById("couponExpiresAt").value = c.expiresAt || "";
+    document.getElementById("couponIsActive").value = c.isActive
+      ? "true"
+      : "false";
+    document.getElementById("couponFormTitle").textContent =
+      `Edit Coupon (#${c.id})`;
+    document.getElementById("submitCouponBtn").textContent = "Update Coupon";
+    document.getElementById("cancelCouponBtn").style.display = "inline-block";
+  }
+}
+
+// DELETE Coupon
+async function deleteCoupon(id) {
+  if (!confirm("Are you sure you want to delete this coupon?")) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/coupons/${id}/`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    if (!res.ok) throw new Error(`Server responded ${res.status}`);
+    await fetchAndRenderCoupons();
+  } catch (err) {
+    alert("Couldn't delete coupon: " + err.message);
+    console.error(err);
+  }
+}
+
+// Reset form to Add state
+function resetCouponForm() {
+  document.getElementById("couponForm").reset();
+  document.getElementById("couponId").value = "";
+  document.getElementById("couponFormTitle").textContent = "Add New Coupon";
+  document.getElementById("submitCouponBtn").textContent = "Save Coupon";
+  document.getElementById("cancelCouponBtn").style.display = "none";
+}
