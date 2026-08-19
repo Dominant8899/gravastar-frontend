@@ -74,11 +74,11 @@ function renderAccountPage(root, session) {
           </div>
           <div>
             <label for="editPhone">Phone Number</label>
-            <input type="text" id="editPhone" value="${escapeHtml(session.phone)}" placeholder="e.g. 012 345 678" />
+            <input type="text" id="editPhone" value="${escapeHtml(session.phone)}" placeholder="e.g. 012 345 678" autocomplete="off" />
           </div>
           <div>
             <label for="editCity">City</label>
-            <input type="text" id="editCity" value="${escapeHtml(session.city)}" placeholder="e.g. Phnom Penh" />
+            <input type="text" id="editCity" value="${escapeHtml(session.city)}" placeholder="e.g. Phnom Penh" autocomplete="off" />
           </div>
 
           <button type="button" class="account-password-toggle" id="showPasswordFormBtn">
@@ -88,7 +88,7 @@ function renderAccountPage(root, session) {
           <div id="passwordFields" style="display: none;">
             <div>
               <label for="currentPassword">Current Password</label>
-              <input type="password" id="currentPassword" autocomplete="current-password" />
+              <input type="password" id="currentPassword" autocomplete="new-password" />
             </div>
             <div>
               <label for="newPassword">New Password (min 8 characters)</label>
@@ -126,11 +126,31 @@ function wireProfileEditing(session) {
   const cancelBtn = document.getElementById("cancelEditBtn");
   const showPasswordBtn = document.getElementById("showPasswordFormBtn");
   const passwordFields = document.getElementById("passwordFields");
+  const currentPasswordInput = document.getElementById("currentPassword");
+  const newPasswordInput = document.getElementById("newPassword");
+
+  // Tracks whether YOU explicitly opened the password section — this is
+  // the real signal for "I want to change my password", not "is there
+  // text in the box". Browsers aggressively autofill saved passwords
+  // into ANY password-type input on a page, even ones sitting hidden
+  // with display:none, so checking field content alone was triggering
+  // a password-change attempt on every save, using whatever the browser
+  // silently filled in behind the scenes.
+  let passwordSectionOpened = false;
+
+  function clearPasswordFields() {
+    currentPasswordInput.value = "";
+    newPasswordInput.value = "";
+  }
 
   function openEdit() {
     infoGrid.classList.add("hidden-while-editing");
     form.classList.add("open");
     editBtn.style.display = "none";
+    // Autofill sometimes lands a moment after the fields become visible
+    // in the DOM, not immediately — clearing again next tick catches
+    // that case too, on top of the clear below in closeEdit().
+    setTimeout(clearPasswordFields, 50);
   }
 
   function closeEdit() {
@@ -138,16 +158,18 @@ function wireProfileEditing(session) {
     form.classList.remove("open");
     editBtn.style.display = "";
     passwordFields.style.display = "none";
-    document.getElementById("currentPassword").value = "";
-    document.getElementById("newPassword").value = "";
+    passwordSectionOpened = false;
+    clearPasswordFields();
   }
 
   editBtn.addEventListener("click", openEdit);
   cancelBtn.addEventListener("click", closeEdit);
 
   showPasswordBtn.addEventListener("click", () => {
-    passwordFields.style.display =
-      passwordFields.style.display === "none" ? "block" : "none";
+    const opening = passwordFields.style.display === "none";
+    passwordFields.style.display = opening ? "block" : "none";
+    passwordSectionOpened = opening;
+    if (!opening) clearPasswordFields();
   });
 
   form.addEventListener("submit", async (e) => {
@@ -167,15 +189,18 @@ function wireProfileEditing(session) {
         }),
       });
 
-      // 2. Only attempt a password change if they actually typed
-      // something in — this form doubles as "just edit my name" too.
-      const currentPassword = document.getElementById("currentPassword").value;
-      const newPassword = document.getElementById("newPassword").value;
-      if (currentPassword || newPassword) {
-        await apiFetch("/auth/change-password/", {
-          method: "POST",
-          body: JSON.stringify({ currentPassword, newPassword }),
-        });
+      // 2. Only attempt a password change if you explicitly opened that
+      // section AND actually typed something — not just because a
+      // hidden field happens to contain autofilled text.
+      if (passwordSectionOpened) {
+        const currentPassword = currentPasswordInput.value;
+        const newPassword = newPasswordInput.value;
+        if (currentPassword || newPassword) {
+          await apiFetch("/auth/change-password/", {
+            method: "POST",
+            body: JSON.stringify({ currentPassword, newPassword }),
+          });
+        }
       }
 
       // Full reload (rather than re-rendering in place) makes it obvious
